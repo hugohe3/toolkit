@@ -60,34 +60,51 @@ CHINA_LAT_MAX = 53.55
 
 
 class CoordinateConverter:
-    """坐标转换器类，提供各种坐标系之间的转换方法"""
+    """坐标转换器类。
+
+    提供中国常用坐标系之间的相互转换方法，包括 WGS84、GCJ02 和 BD09。
+    所有方法均为静态方法或类方法，可直接通过类名调用。
+
+    .. note::
+       - WGS84: 国际标准GPS坐标系
+       - GCJ02: 中国火星坐标系（国测局标准）
+       - BD09: 百度地图坐标系
+
+    :Example:
+
+    >>> # 使用类方法进行转换
+    >>> lon, lat = CoordinateConverter.wgs84_to_gcj02(120.0, 30.0)
+    >>> print(f"GCJ02: ({lon}, {lat})")
+    """
 
     @staticmethod
     def is_in_china(lon: float, lat: float) -> bool:
-        """
-        判断坐标是否在中国境内
+        """判断坐标是否在中国境内。
 
-        Args:
-            lon: 经度
-            lat: 纬度
+        根据经纬度范围判断坐标点是否位于中国大陆境内，用于决定是否需要进行坐标系偏移转换。
 
-        Returns:
-            bool: 如果坐标在中国境内返回 True，否则返回 False
+        :param lon: 经度
+        :param lat: 纬度
+        :return: 如果坐标在中国境内返回 True，否则返回 False
+
+        .. note::
+           中国境内经纬度范围：经度 73.66° ~ 135.05°，纬度 3.86° ~ 53.55°
         """
         return (CHINA_LON_MIN <= lon <= CHINA_LON_MAX and
                 CHINA_LAT_MIN <= lat <= CHINA_LAT_MAX)
 
     @staticmethod
     def _transform_lon(lon: float, lat: float) -> float:
-        """
-        经度转换的辅助函数（用于 WGS84 与 GCJ02 之间的转换）
+        """经度转换的辅助函数。
 
-        Args:
-            lon: 经度
-            lat: 纬度
+        用于 WGS84 与 GCJ02 坐标系之间的经度偏移计算，基于国测局的加密算法实现。
 
-        Returns:
-            float: 转换后的经度偏移量
+        :param lon: 经度
+        :param lat: 纬度
+        :return: 转换后的经度偏移量
+
+        .. note::
+           这是内部辅助方法，不应直接调用。使用公开的转换方法如 wgs84_to_gcj02() 代替。
         """
         ret = (300.0 + lon + 2.0 * lat + 0.1 * lon * lon +
                0.1 * lon * lat + 0.1 * math.sqrt(abs(lon)))
@@ -101,15 +118,16 @@ class CoordinateConverter:
 
     @staticmethod
     def _transform_lat(lon: float, lat: float) -> float:
-        """
-        纬度转换的辅助函数（用于 WGS84 与 GCJ02 之间的转换）
+        """纬度转换的辅助函数。
 
-        Args:
-            lon: 经度
-            lat: 纬度
+        用于 WGS84 与 GCJ02 坐标系之间的纬度偏移计算，基于国测局的加密算法实现。
 
-        Returns:
-            float: 转换后的纬度偏移量
+        :param lon: 经度
+        :param lat: 纬度
+        :return: 转换后的纬度偏移量
+
+        .. note::
+           这是内部辅助方法，不应直接调用。使用公开的转换方法如 wgs84_to_gcj02() 代替。
         """
         ret = (-100.0 + 2.0 * lon + 3.0 * lat + 0.2 * lat * lat +
                0.1 * lon * lat + 0.2 * math.sqrt(abs(lon)))
@@ -123,15 +141,16 @@ class CoordinateConverter:
 
     @classmethod
     def wgs84_to_gcj02(cls, lon: float, lat: float) -> Tuple[float, float]:
-        """
-        WGS84 坐标系转 GCJ02 火星坐标系
+        """WGS84 坐标系转 GCJ02 火星坐标系。
 
-        Args:
-            lon: WGS84 经度
-            lat: WGS84 纬度
+        将国际标准 GPS 坐标转换为中国国测局的火星坐标系。如果坐标不在中国境内，则不进行偏移处理。
 
-        Returns:
-            Tuple[float, float]: (GCJ02经度, GCJ02纬度)
+        :param lon: WGS84 经度
+        :param lat: WGS84 纬度
+        :return: (GCJ02经度, GCJ02纬度)
+
+        .. note::
+           GCJ02 坐标系用于高德地图、腾讯地图、谷歌中国地图等。
         """
         # 如果不在中国境内，不进行偏移
         if not cls.is_in_china(lon, lat):
@@ -155,15 +174,13 @@ class CoordinateConverter:
 
     @classmethod
     def gcj02_to_wgs84(cls, lon: float, lat: float) -> Tuple[float, float]:
-        """
-        GCJ02 火星坐标系转 WGS84 坐标系（精确转换）
+        """GCJ02 火星坐标系转 WGS84 坐标系。
 
-        Args:
-            lon: GCJ02 经度
-            lat: GCJ02 纬度
+        将中国国测局的火星坐标系转换为国际标准 GPS 坐标。采用精确算法进行转换，如果坐标不在中国境内，则不进行偏移处理。
 
-        Returns:
-            Tuple[float, float]: (WGS84经度, WGS84纬度)
+        :param lon: GCJ02 经度
+        :param lat: GCJ02 纬度
+        :return: (WGS84经度, WGS84纬度)
         """
         # 如果不在中国境内，不进行偏移
         if not cls.is_in_china(lon, lat):
@@ -187,15 +204,14 @@ class CoordinateConverter:
 
     @staticmethod
     def gcj02_to_bd09(lon: float, lat: float) -> Tuple[float, float]:
-        """
-        GCJ02 火星坐标系转 BD09 百度坐标系
+        """GCJ02 火星坐标系转 BD09 百度坐标系。
 
-        Args:
-            lon: GCJ02 经度
-            lat: GCJ02 纬度
+        :param lon: GCJ02 经度
+        :param lat: GCJ02 纬度
+        :return: (BD09经度, BD09纬度)
 
-        Returns:
-            Tuple[float, float]: (BD09经度, BD09纬度)
+        .. note::
+           BD09 坐标系专用于百度地图服务。
         """
         z = math.sqrt(lon * lon + lat * lat) + 0.00002 * math.sin(lat * X_PI)
         theta = math.atan2(lat, lon) + 0.000003 * math.cos(lon * X_PI)
@@ -205,15 +221,11 @@ class CoordinateConverter:
 
     @staticmethod
     def bd09_to_gcj02(lon: float, lat: float) -> Tuple[float, float]:
-        """
-        BD09 百度坐标系转 GCJ02 火星坐标系
+        """BD09 百度坐标系转 GCJ02 火星坐标系。
 
-        Args:
-            lon: BD09 经度
-            lat: BD09 纬度
-
-        Returns:
-            Tuple[float, float]: (GCJ02经度, GCJ02纬度)
+        :param lon: BD09 经度
+        :param lat: BD09 纬度
+        :return: (GCJ02经度, GCJ02纬度)
         """
         x = lon - 0.0065
         y = lat - 0.006
@@ -225,30 +237,26 @@ class CoordinateConverter:
 
     @classmethod
     def wgs84_to_bd09(cls, lon: float, lat: float) -> Tuple[float, float]:
-        """
-        WGS84 坐标系转 BD09 百度坐标系
+        """WGS84 坐标系转 BD09 百度坐标系。
 
-        Args:
-            lon: WGS84 经度
-            lat: WGS84 纬度
+        将国际标准 GPS 坐标直接转换为百度地图坐标系。内部通过 WGS84 -> GCJ02 -> BD09 两步转换实现。
 
-        Returns:
-            Tuple[float, float]: (BD09经度, BD09纬度)
+        :param lon: WGS84 经度
+        :param lat: WGS84 纬度
+        :return: (BD09经度, BD09纬度)
         """
         gcj_lon, gcj_lat = cls.wgs84_to_gcj02(lon, lat)
         return cls.gcj02_to_bd09(gcj_lon, gcj_lat)
 
     @classmethod
     def bd09_to_wgs84(cls, lon: float, lat: float) -> Tuple[float, float]:
-        """
-        BD09 百度坐标系转 WGS84 坐标系
+        """BD09 百度坐标系转 WGS84 坐标系。
 
-        Args:
-            lon: BD09 经度
-            lat: BD09 纬度
+        将百度地图坐标系直接转换为国际标准 GPS 坐标。内部通过 BD09 -> GCJ02 -> WGS84 两步转换实现。
 
-        Returns:
-            Tuple[float, float]: (WGS84经度, WGS84纬度)
+        :param lon: BD09 经度
+        :param lat: BD09 纬度
+        :return: (WGS84经度, WGS84纬度)
         """
         gcj_lon, gcj_lat = cls.bd09_to_gcj02(lon, lat)
         return cls.gcj02_to_wgs84(gcj_lon, gcj_lat)
@@ -256,32 +264,50 @@ class CoordinateConverter:
 
 # 为了向后兼容，提供函数式接口
 def wgs84_to_gcj02(lon: float, lat: float) -> Tuple[float, float]:
-    """WGS84 转 GCJ02"""
+    """WGS84 转 GCJ02（向后兼容接口）。
+
+    .. deprecated:: 推荐使用 CoordinateConverter.wgs84_to_gcj02 类方法
+    """
     return CoordinateConverter.wgs84_to_gcj02(lon, lat)
 
 
 def gcj02_to_wgs84(lon: float, lat: float) -> Tuple[float, float]:
-    """GCJ02 转 WGS84"""
+    """GCJ02 转 WGS84（向后兼容接口）。
+
+    .. deprecated:: 推荐使用 CoordinateConverter.gcj02_to_wgs84 类方法
+    """
     return CoordinateConverter.gcj02_to_wgs84(lon, lat)
 
 
 def gcj02_to_bd09(lon: float, lat: float) -> Tuple[float, float]:
-    """GCJ02 转 BD09"""
+    """GCJ02 转 BD09（向后兼容接口）。
+
+    .. deprecated:: 推荐使用 CoordinateConverter.gcj02_to_bd09 类方法
+    """
     return CoordinateConverter.gcj02_to_bd09(lon, lat)
 
 
 def bd09_to_gcj02(lon: float, lat: float) -> Tuple[float, float]:
-    """BD09 转 GCJ02"""
+    """BD09 转 GCJ02（向后兼容接口）。
+
+    .. deprecated:: 推荐使用 CoordinateConverter.bd09_to_gcj02 类方法
+    """
     return CoordinateConverter.bd09_to_gcj02(lon, lat)
 
 
 def wgs84_to_bd09(lon: float, lat: float) -> Tuple[float, float]:
-    """WGS84 转 BD09"""
+    """WGS84 转 BD09（向后兼容接口）。
+
+    .. deprecated:: 推荐使用 CoordinateConverter.wgs84_to_bd09 类方法
+    """
     return CoordinateConverter.wgs84_to_bd09(lon, lat)
 
 
 def bd09_to_wgs84(lon: float, lat: float) -> Tuple[float, float]:
-    """BD09 转 WGS84"""
+    """BD09 转 WGS84（向后兼容接口）。
+
+    .. deprecated:: 推荐使用 CoordinateConverter.bd09_to_wgs84 类方法
+    """
     return CoordinateConverter.bd09_to_wgs84(lon, lat)
 
 

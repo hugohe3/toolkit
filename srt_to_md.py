@@ -1,12 +1,24 @@
+"""SRT字幕文件转Markdown工具模块。
+
+此模块提供了将SRT格式字幕文件转换为Markdown格式的功能。
+支持批量处理多个章节目录下的SRT文件，并为每个章节生成对应的Markdown文档。
+"""
+
 import os
 import re
 from pathlib import Path
 
 
-def process_srt_file(srt_path):
-    """
-    处理单个SRT文件，去掉时间轴和换行
-    返回处理后的文本内容
+def process_srt_file(srt_path: Path) -> str:
+    """处理单个SRT文件，去掉时间轴和换行。
+
+    从SRT字幕文件中提取纯文本内容，移除序号、时间轴等元数据，并将多行字幕合并为单行文本。
+
+    :param srt_path: SRT文件的路径
+    :return: 处理后的纯文本内容
+
+    .. note::
+       SRT文件格式包含：序号 -> 时间轴 -> 字幕文本 -> 空行 -> 重复
     """
     with open(srt_path, 'r', encoding='utf-8') as file:
         content = file.read()
@@ -38,19 +50,27 @@ def process_srt_file(srt_path):
     return ' '.join(processed_text)
 
 
-def natural_sort_key(s):
-    """
-    用于自然排序的键函数
-    将字符串中的数字部分转换为整数进行比较
+def natural_sort_key(s: str) -> list:
+    """自然排序的键函数。
+
+    将字符串中的数字部分转换为整数进行比较，实现符合人类习惯的排序。例如：'chapter2' 会排在 'chapter10' 之前。
+
+    :param s: 待排序的字符串
+    :return: 包含整数和字符串的混合列表，用作排序键
     """
     return [int(text) if text.isdigit() else text.lower()
             for text in re.split(r'(\d+)', str(s))]
 
 
-def main(root_dir):
-    """
-    处理根目录下所有章节文件夹中的SRT文件
-    为每个章节生成一个Markdown文件
+def main(root_dir: str) -> None:
+    """处理根目录下所有章节文件夹中的SRT文件。
+
+    遍历指定根目录下的所有子文件夹，将每个文件夹中的SRT文件合并转换为一个Markdown文件。章节和文件按自然顺序排序。
+
+    :param root_dir: 包含章节文件夹的根目录路径
+
+    .. note::
+       每个子文件夹被视为一个章节，生成的Markdown文件以章节名命名，文件夹和SRT文件按自然顺序排序
     """
     root_path = Path(root_dir)
 
@@ -92,8 +112,8 @@ def main(root_dir):
 
 
 if __name__ == "__main__":
-    # 通过用户输入获取目标文件夹路径
-    target_directory = input("请输入要处理的文件夹路径: ")
+    # 主程序入口：通过命令行交互获取目标文件夹路径，验证后执行转换操作
+    target_directory: str = input("请输入要处理的文件夹路径: ")
 
     # 去除可能的引号（用户可能复制带引号的路径）
     target_directory = target_directory.strip('"\'')
